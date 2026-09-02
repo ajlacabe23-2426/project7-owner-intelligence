@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from uuid import uuid4
+from uuid import NAMESPACE_URL, uuid5
+from datetime import timezone
 
 from app.models import BusinessSignal, EvidenceRef, Finding, Severity, SignalType
+from app.evidence import observation_signature, unique_observations
 
 
 def _evidence(signal: BusinessSignal) -> EvidenceRef:
@@ -11,6 +13,11 @@ def _evidence(signal: BusinessSignal) -> EvidenceRef:
         source=signal.source,
         metric=signal.metric,
         observed_value=signal.value,
+        observed_at=signal.observed_at.astimezone(timezone.utc),
+        baseline=signal.baseline,
+        unit=signal.unit,
+        entity_ref=signal.entity_ref,
+        amount=signal.metadata.get("amount") if signal.metric == "invoice_days_overdue" else None,
     )
 
 
@@ -22,15 +29,16 @@ def evaluate_signals(signals: list[BusinessSignal]) -> list[Finding]:
     """
     findings: list[Finding] = []
 
-    for signal in signals:
+    for signal in unique_observations(signals):
+        finding_id = str(uuid5(NAMESPACE_URL, "project7:rules:v1:" + observation_signature(signal)))
         if signal.signal_type == SignalType.receivable and signal.metric == "invoice_days_overdue":
             days = float(signal.value)
-            amount = float(signal.metadata.get("amount", 0))
+            amount = float(signal.metadata["amount"])
             if days >= 30 and amount >= 1000:
                 severity = Severity.high if days < 60 else Severity.critical
                 findings.append(
                     Finding(
-                        id=str(uuid4()),
+                        id=finding_id,
                         title="Material overdue receivable",
                         severity=severity,
                         explanation=(
@@ -47,10 +55,10 @@ def evaluate_signals(signals: list[BusinessSignal]) -> list[Finding]:
             if count >= 3:
                 findings.append(
                     Finding(
-                        id=str(uuid4()),
+                        id=finding_id,
                         title="Urgent support backlog",
                         severity=Severity.high,
-                        explanation=f"There are {count} urgent support items currently open.",
+                        explanation=f"The supplied observation reports {count} open urgent support items.",
                         recommended_action="Assign an owner and due time to each urgent item before taking lower-priority work.",
                         evidence=[_evidence(signal)],
                     )
@@ -62,7 +70,7 @@ def evaluate_signals(signals: list[BusinessSignal]) -> list[Finding]:
             if rating < 4.0 and (baseline is None or rating < baseline):
                 findings.append(
                     Finding(
-                        id=str(uuid4()),
+                        id=finding_id,
                         title="Customer rating below operating threshold",
                         severity=Severity.medium,
                         explanation=(
@@ -82,7 +90,7 @@ def evaluate_signals(signals: list[BusinessSignal]) -> list[Finding]:
                 if change <= -0.20:
                     findings.append(
                         Finding(
-                            id=str(uuid4()),
+                            id=finding_id,
                             title="Revenue materially below baseline",
                             severity=Severity.medium if change > -0.40 else Severity.high,
                             explanation=f"Revenue is {abs(change):.0%} below the supplied baseline.",
@@ -96,14 +104,14 @@ def evaluate_signals(signals: list[BusinessSignal]) -> list[Finding]:
             if count > 0:
                 findings.append(
                     Finding(
-                        id=str(uuid4()),
+                        id=finding_id,
                         title="Customer appointments lack ownership",
                         severity=Severity.high if count >= 3 else Severity.medium,
-                        explanation=f"{count} customer appointment(s) are currently unassigned.",
+                        explanation=f"The supplied observation reports {count} unassigned customer appointment(s).",
                         recommended_action="Assign an accountable owner before the appointment window begins.",
                         evidence=[_evidence(signal)],
                     )
                 )
 
     rank = {Severity.critical: 0, Severity.high: 1, Severity.medium: 2, Severity.low: 3}
-    return sorted(findings, key=lambda item: rank[item.severity])
+    return sorted(findings, key=lambda item: (rank[item.severity], item.id))
