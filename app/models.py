@@ -92,7 +92,7 @@ class BusinessSignal(BaseModel):
 
 EvidenceQualityLevel = Literal["fresh", "degraded", "blocked"]
 FindingConfidence = Literal["normal", "reduced", "blocked"]
-EpisodePresentationState = Literal["new", "ongoing", "reopened"]
+EpisodePresentationState = Literal["new", "ongoing", "reopened", "resolved"]
 EpisodeCurrentStatus = Literal["open", "resolved"]
 
 
@@ -154,6 +154,7 @@ class FindingEpisode(BaseModel):
     last_seen: datetime
     recurrence_count: int = Field(ge=1)
     resolution_timestamp: datetime | None = None
+    resolution_reason_code: str | None = None
     reopen_count: int = Field(default=0, ge=0)
     recommendation_history: list[RecommendationHistoryEntry] = Field(default_factory=list)
     latest_finding: Finding
