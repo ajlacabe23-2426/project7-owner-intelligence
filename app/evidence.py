@@ -5,12 +5,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 import json
 
-from app.models import (
-    BusinessSignal,
-    EvidenceIssue,
-    EvidenceQuality,
-    SignalType,
-)
+from app.models import BusinessSignal, EvidenceIssue, EvidenceQuality, SignalType
 
 
 class ConflictingObservation(ValueError):
@@ -82,13 +77,16 @@ def assess_evidence(
 ) -> tuple[dict[ObservationKey, EvidenceQuality], list[EvidenceIssue]]:
     """Assess freshness, missing expectations, and cross-source contradictions.
 
-    The policy is deterministic and contains no model/LLM resolution. Conflicting
-    source facts are kept visible and marked blocked rather than averaged together.
+    Quality attached to findings intentionally contains only stable qualitative
+    state and reason codes. The owner brief carries the assessment timestamp, so
+    repeated delivery of identical evidence remains deterministic until a policy
+    boundary (for example, freshness expiry) is actually crossed.
     """
     observed = unique_observations(signals)
-    assessed_at = (as_of or datetime.now(timezone.utc)).astimezone(timezone.utc)
-    if assessed_at.tzinfo is None:
+    raw_assessed_at = as_of or datetime.now(timezone.utc)
+    if raw_assessed_at.tzinfo is None:
         raise ValueError("as_of must be timezone-aware")
+    assessed_at = raw_assessed_at.astimezone(timezone.utc)
 
     quality_by_observation: dict[ObservationKey, EvidenceQuality] = {}
     issues: list[EvidenceIssue] = []
@@ -96,13 +94,7 @@ def assess_evidence(
     for signal in observed:
         observed_at = signal.observed_at.astimezone(timezone.utc)
         delta = assessed_at - observed_at
-        age_seconds = max(0, int(delta.total_seconds()))
-        quality = EvidenceQuality(
-            level="fresh",
-            reason_codes=[],
-            assessed_at=assessed_at,
-            age_seconds=age_seconds,
-        )
+        quality = EvidenceQuality(level="fresh", reason_codes=[])
         if observed_at - assessed_at > FUTURE_TOLERANCE:
             _append_reason(quality, "observation.future-dated", "degraded")
             issues.append(
@@ -140,7 +132,8 @@ def assess_evidence(
         grouped[evidence_identity(signal)].append(signal)
 
     for identity, group in sorted(
-        grouped.items(), key=lambda item: (item[0][0].value, item[0][1], item[0][2] or "")
+        grouped.items(),
+        key=lambda item: (item[0][0].value, item[0][1], item[0][2] or ""),
     ):
         ordered = sorted(
             group,
