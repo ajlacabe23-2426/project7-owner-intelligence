@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 import math
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -41,7 +41,9 @@ class BusinessSignal(BaseModel):
     @field_validator("baseline", mode="before")
     @classmethod
     def validate_baseline_type(cls, value: Any) -> Any:
-        if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float))):
+        if value is not None and (
+            isinstance(value, bool) or not isinstance(value, (int, float))
+        ):
             raise ValueError("baseline must be a number or null")
         return value
 
@@ -71,7 +73,11 @@ class BusinessSignal(BaseModel):
         value = number(self.value, "value")
         if self.baseline is not None:
             number(self.baseline, "baseline")
-        if self.metric in {"open_urgent_items", "unassigned_customer_appointments", "invoice_days_overdue"}:
+        if self.metric in {
+            "open_urgent_items",
+            "unassigned_customer_appointments",
+            "invoice_days_overdue",
+        }:
             if value != int(value):
                 raise ValueError("count and day metrics must be whole numbers")
         if self.metric == "average_rating":
@@ -84,6 +90,26 @@ class BusinessSignal(BaseModel):
         return self
 
 
+EvidenceQualityLevel = Literal["fresh", "degraded", "blocked"]
+FindingConfidence = Literal["normal", "reduced", "blocked"]
+
+
+class EvidenceQuality(BaseModel):
+    level: EvidenceQualityLevel
+    reason_codes: list[str] = Field(default_factory=list)
+    assessed_at: datetime
+    age_seconds: int | None = Field(default=None, ge=0)
+
+
+class EvidenceIssue(BaseModel):
+    code: str
+    metric: str
+    entity_ref: str | None = None
+    signal_ids: list[str] = Field(default_factory=list)
+    sources: list[str] = Field(default_factory=list)
+    detail: str
+
+
 class EvidenceRef(BaseModel):
     signal_id: str
     source: str
@@ -94,6 +120,7 @@ class EvidenceRef(BaseModel):
     unit: str | None = None
     entity_ref: str | None = None
     amount: float | int | None = None
+    quality: EvidenceQuality | None = None
 
 
 class Finding(BaseModel):
@@ -104,6 +131,7 @@ class Finding(BaseModel):
     recommended_action: str
     evidence: list[EvidenceRef]
     rule_version: str = "v1"
+    confidence: FindingConfidence = "normal"
 
 
 class OwnerBrief(BaseModel):
@@ -112,3 +140,4 @@ class OwnerBrief(BaseModel):
     findings: list[Finding]
     action_queue: list[str]
     signal_count: int
+    evidence_issues: list[EvidenceIssue] = Field(default_factory=list)
