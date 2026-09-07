@@ -92,6 +92,8 @@ class BusinessSignal(BaseModel):
 
 EvidenceQualityLevel = Literal["fresh", "degraded", "blocked"]
 FindingConfidence = Literal["normal", "reduced", "blocked"]
+EpisodePresentationState = Literal["new", "ongoing", "reopened", "resolved"]
+EpisodeCurrentStatus = Literal["open", "resolved"]
 
 
 class EvidenceQuality(BaseModel):
@@ -130,6 +132,38 @@ class Finding(BaseModel):
     evidence: list[EvidenceRef]
     rule_version: str = "v1"
     confidence: FindingConfidence = "normal"
+    episode_id: str | None = None
+    episode_state: EpisodePresentationState | None = None
+    episode_first_seen: datetime | None = None
+    episode_last_seen: datetime | None = None
+    episode_recurrence_count: int | None = Field(default=None, ge=1)
+
+
+class RecommendationHistoryEntry(BaseModel):
+    recorded_at: datetime
+    recommendation: str
+    finding_id: str
+
+
+class FindingEpisode(BaseModel):
+    episode_id: str
+    finding_key: str
+    title: str
+    current_status: EpisodeCurrentStatus
+    first_seen: datetime
+    last_seen: datetime
+    recurrence_count: int = Field(ge=1)
+    resolution_timestamp: datetime | None = None
+    resolution_reason_code: str | None = None
+    reopen_count: int = Field(default=0, ge=0)
+    recommendation_history: list[RecommendationHistoryEntry] = Field(default_factory=list)
+    latest_finding: Finding
+
+
+class ResolveEpisodeRequest(BaseModel):
+    reason_code: str = Field(
+        min_length=1, max_length=120, pattern=r"^[A-Za-z0-9._:-]+$"
+    )
 
 
 class OwnerBrief(BaseModel):
