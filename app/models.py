@@ -97,8 +97,6 @@ FindingConfidence = Literal["normal", "reduced", "blocked"]
 class EvidenceQuality(BaseModel):
     level: EvidenceQualityLevel
     reason_codes: list[str] = Field(default_factory=list)
-    assessed_at: datetime
-    age_seconds: int | None = Field(default=None, ge=0)
 
 
 class EvidenceIssue(BaseModel):
