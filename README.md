@@ -31,6 +31,19 @@ Owner brief + action queue
 - Regression tests
 - GitHub Actions CI
 
+## Operator decisions and outcome evidence (local demo)
+
+The stateful episode API supports human dispositions and post-action evidence:
+
+- `POST /analyze/episodes` records eligible finding episodes.
+- `POST /episodes/{episode_id}/dispositions` records an explicit operator decision.
+- `POST /episodes/{episode_id}/outcomes` links a subsequent synthetic observation
+  to an acted decision without inferring causality.
+- `GET /episodes/{episode_id}/feedback` reconstructs decisions and observations.
+
+See [operator feedback lab](docs/OPERATOR_FEEDBACK.md) for a reproducible walkthrough.
+**This is a synthetic/local demo, not an authenticated or publicly deployable service.**
+
 ## Important product boundary
 
 This repository is **not** evidence that businesses will pay for this product.
@@ -82,6 +95,6 @@ The project is intentionally structured to demonstrate:
 
 ## Project status
 
-**Stage:** technical V1 foundation in progress.
+**Stage:** technical V1 foundation plus local evidence-quality, episode-memory, and operator-feedback experiments. Real customer use remains gated.
 
 See `docs/PROJECT_CHECKPOINT.md`, `docs/ARCHITECTURE.md`, and `docs/COMMERCIAL_GATES.md`.
