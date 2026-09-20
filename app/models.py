@@ -173,3 +173,40 @@ class OwnerBrief(BaseModel):
     action_queue: list[str]
     signal_count: int
     evidence_issues: list[EvidenceIssue] = Field(default_factory=list)
+
+
+# Local/demo feedback is human-entered evidence, never an automatic finding.
+DispositionStatus = Literal["acted", "dismissed", "deferred", "needs-more-info"]
+
+
+class OperatorDispositionRequest(BaseModel):
+    event_id: str = Field(min_length=1, max_length=120, pattern=r"^[A-Za-z0-9._:-]+$")
+    status: DispositionStatus
+    reason_code: str = Field(min_length=1, max_length=120, pattern=r"^[A-Za-z0-9._:-]+$")
+
+
+class OperatorDisposition(OperatorDispositionRequest):
+    episode_id: str
+    recorded_at: AwareDatetime
+
+
+class OutcomeObservationRequest(BaseModel):
+    event_id: str = Field(min_length=1, max_length=120, pattern=r"^[A-Za-z0-9._:-]+$")
+    disposition_event_id: str = Field(min_length=1, max_length=120, pattern=r"^[A-Za-z0-9._:-]+$")
+    signal: BusinessSignal
+
+
+class OutcomeObservation(OutcomeObservationRequest):
+    episode_id: str
+    recorded_at: AwareDatetime
+    interpretation: Literal["observation-only"] = "observation-only"
+
+
+class EpisodeFeedback(BaseModel):
+    episode: FindingEpisode
+    dispositions: list[OperatorDisposition]
+    outcomes: list[OutcomeObservation]
+    interpretation_note: str = (
+        "Outcome observations are post-action measurements, not proof that the action caused a change. "
+        "Operator feedback does not automatically change severity or resolve an episode."
+    )
