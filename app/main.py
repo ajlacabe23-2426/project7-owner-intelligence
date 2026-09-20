@@ -8,8 +8,14 @@ from app.brief import build_owner_brief
 from app.demo_data import synthetic_signals
 from app.episodes import EpisodeNotFound, list_episodes, reconcile_brief, resolve_episode
 from app.evidence import ConflictingObservation
+from app.feedback import FeedbackConflict, get_episode_feedback, record_disposition, record_outcome
 from app.models import (
     BusinessSignal,
+    EpisodeFeedback,
+    OperatorDisposition,
+    OperatorDispositionRequest,
+    OutcomeObservation,
+    OutcomeObservationRequest,
     FindingEpisode,
     OwnerBrief,
     ResolveEpisodeRequest,
@@ -17,7 +23,7 @@ from app.models import (
 
 app = FastAPI(
     title="Project 7 — Owner Intelligence",
-    version="0.3.0",
+    version="0.4.0",
     description="Evidence-linked owner/operator intelligence API.",
 )
 
@@ -79,3 +85,36 @@ def resolve_finding_episode(
         return resolve_episode(episode_id, request.reason_code)
     except EpisodeNotFound as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
+
+
+# This API remains local/demo-only. No production authentication or tenant model exists.
+@app.get("/episodes/{episode_id}/feedback", response_model=EpisodeFeedback)
+def episode_feedback(episode_id: str) -> EpisodeFeedback:
+    try:
+        return get_episode_feedback(episode_id)
+    except EpisodeNotFound as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+
+@app.post("/episodes/{episode_id}/dispositions", response_model=OperatorDisposition, status_code=201)
+def add_episode_disposition(
+    episode_id: str, request: OperatorDispositionRequest
+) -> OperatorDisposition:
+    try:
+        return record_disposition(episode_id, request)
+    except EpisodeNotFound as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except FeedbackConflict as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+
+
+@app.post("/episodes/{episode_id}/outcomes", response_model=OutcomeObservation, status_code=201)
+def add_episode_outcome(
+    episode_id: str, request: OutcomeObservationRequest
+) -> OutcomeObservation:
+    try:
+        return record_outcome(episode_id, request)
+    except EpisodeNotFound as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except FeedbackConflict as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
