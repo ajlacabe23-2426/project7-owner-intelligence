@@ -131,12 +131,54 @@ def assess_evidence(
     for signal in observed:
         grouped[evidence_identity(signal)].append(signal)
 
+    # Within one source and one operational fact, only the newest observation is
+    # current. Older observations remain visible evidence but are explicitly
+    # superseded so they cannot drive a present-tense owner action.
+    for identity, group in grouped.items():
+        by_source: dict[str, list[BusinessSignal]] = defaultdict(list)
+        for signal in group:
+            by_source[signal.source].append(signal)
+        for source, source_group in by_source.items():
+            latest_at = max(
+                signal.observed_at.astimezone(timezone.utc) for signal in source_group
+            )
+            superseded = [
+                signal
+                for signal in source_group
+                if signal.observed_at.astimezone(timezone.utc) < latest_at
+            ]
+            for signal in superseded:
+                _append_reason(
+                    quality_by_observation[(signal.source, signal.id)],
+                    "observation.superseded",
+                    "blocked",
+                )
+                issues.append(
+                    EvidenceIssue(
+                        code="observation.superseded",
+                        metric=identity[1],
+                        entity_ref=identity[2],
+                        signal_ids=[signal.id],
+                        sources=[source],
+                        detail=(
+                            "A newer observation from the same source exists for this "
+                            "metric/entity; the older value is retained as history but "
+                            "cannot drive a current action."
+                        ),
+                    )
+                )
+
     for identity, group in sorted(
         grouped.items(),
         key=lambda item: (item[0][0].value, item[0][1], item[0][2] or ""),
     ):
         ordered = sorted(
-            group,
+            [
+                signal
+                for signal in group
+                if "observation.superseded"
+                not in quality_by_observation[(signal.source, signal.id)].reason_codes
+            ],
             key=lambda signal: (
                 signal.observed_at.astimezone(timezone.utc),
                 signal.source,
