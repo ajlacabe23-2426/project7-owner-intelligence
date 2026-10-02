@@ -166,6 +166,24 @@ class ResolveEpisodeRequest(BaseModel):
     )
 
 
+TemporalDirection = Literal["rising", "falling", "flat"]
+
+
+class TemporalAssessment(BaseModel):
+    source: str
+    signal_type: SignalType
+    metric: str
+    entity_ref: str | None = None
+    observation_count: int = Field(ge=3)
+    first_observed_at: AwareDatetime
+    latest_observed_at: AwareDatetime
+    first_value: float
+    latest_value: float
+    change_pct: float | None = None
+    direction: TemporalDirection
+    interpretation: Literal["descriptive-only"] = "descriptive-only"
+
+
 class OwnerBrief(BaseModel):
     generated_at: datetime
     headline: str
@@ -173,6 +191,7 @@ class OwnerBrief(BaseModel):
     action_queue: list[str]
     signal_count: int
     evidence_issues: list[EvidenceIssue] = Field(default_factory=list)
+    temporal_assessments: list[TemporalAssessment] = Field(default_factory=list)
 
 
 # Local/demo feedback is human-entered evidence, never an automatic finding.
