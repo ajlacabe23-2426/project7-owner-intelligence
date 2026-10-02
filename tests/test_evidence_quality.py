@@ -127,3 +127,58 @@ def test_future_dated_observation_is_degraded_not_treated_as_current():
     assert result.level == "degraded"
     assert "observation.future-dated" in result.reason_codes
     assert any(issue.code == "observation.future-dated" for issue in issues)
+
+
+def test_older_same_source_observation_is_superseded_and_cannot_drive_action():
+    older = support_signal(
+        signal_id="support-old",
+        source="support.primary",
+        value=5,
+        observed_at=BASE,
+    )
+    newer = support_signal(
+        signal_id="support-current",
+        source="support.primary",
+        value=0,
+        observed_at=BASE + timedelta(hours=1),
+    )
+    brief = build_owner_brief([older, newer], as_of=BASE + timedelta(hours=2))
+
+    superseded = [
+        issue for issue in brief.evidence_issues
+        if issue.code == "observation.superseded"
+    ]
+    assert len(superseded) == 1
+    assert superseded[0].signal_ids == ["support-old"]
+    assert brief.findings == []
+    assert brief.action_queue == []
+
+
+def test_superseded_value_does_not_create_false_cross_source_conflict():
+    older = support_signal(
+        signal_id="a-old",
+        source="support.a",
+        value=7,
+        observed_at=BASE,
+    )
+    current_a = support_signal(
+        signal_id="a-current",
+        source="support.a",
+        value=2,
+        observed_at=BASE + timedelta(minutes=30),
+    )
+    current_b = support_signal(
+        signal_id="b-current",
+        source="support.b",
+        value=2,
+        observed_at=BASE + timedelta(minutes=35),
+    )
+    quality, issues = assess_evidence(
+        [older, current_a, current_b],
+        as_of=BASE + timedelta(hours=1),
+    )
+
+    assert "observation.superseded" in quality[("support.a", "a-old")].reason_codes
+    assert not any(
+        issue.code == "observation.cross-source-conflict" for issue in issues
+    )
