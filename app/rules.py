@@ -61,6 +61,11 @@ def evaluate_signals(
 
     for signal in observed:
         quality = quality_by_observation[(signal.source, signal.id)]
+        # Superseded observations remain inspectable evidence history, but a
+        # newer fact from the same source must be the only one allowed to drive
+        # a present-tense finding.
+        if "observation.superseded" in quality.reason_codes:
+            continue
         confidence = _confidence(quality)
         evidence = [_evidence(signal, quality)]
         finding_id = str(
