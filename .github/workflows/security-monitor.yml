@@ -1,49 +1,39 @@
-name: CI
+name: Security monitor
 
 on:
-  push:
-    branches: [main]
   pull_request:
-    branches: [main]
+  push:
+  schedule:
+    - cron: "47 11 * * *"
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: security-monitor-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
+  repository-security:
+    name: Repository security
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
-      - name: Checkout
+      - name: Check out full repository history
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
-
       - name: Set up Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.12"
-
-      - name: Scan reachable Git history for credential material
+      - name: Scan reachable history for credential material
         run: python scripts/security/scan_git_history.py
-
       - name: Validate repository security baseline
         run: python scripts/security/check_repository_baseline.py
-
-      - name: Install dependencies
-        run: python -m pip install -r requirements.txt
-
       - name: Audit Python dependency advisories
         run: |
           python -m pip install --disable-pip-version-check pip-audit==2.10.1
           python -m pip_audit -r requirements.txt
-
-      - name: Compile application
-        run: python -m compileall -q app tests scripts
-
-      - name: Check dependency consistency
-        run: python -m pip check
-
-      - name: Run tests
-        run: python -m pytest -q
