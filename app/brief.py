@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from app.evidence import ExpectedObservation, assess_evidence
 from app.models import BusinessSignal, OwnerBrief, Severity
 from app.rules import evaluate_signals
+from app.temporal import assess_temporal_patterns
 
 
 def build_owner_brief(
@@ -33,6 +34,8 @@ def build_owner_brief(
     if evidence_issues:
         headline += f" Evidence review flagged {len(evidence_issues)} quality issue(s)."
 
+    temporal_assessments = assess_temporal_patterns(signals)
+
     action_queue = [
         finding.recommended_action
         for finding in findings
@@ -47,4 +50,5 @@ def build_owner_brief(
         action_queue=action_queue,
         signal_count=len(signals),
         evidence_issues=evidence_issues,
+        temporal_assessments=temporal_assessments,
     )
