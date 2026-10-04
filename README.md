@@ -25,6 +25,7 @@ Owner brief + action queue
 - Deterministic rule engine
 - Priority levels: critical / high / medium / low
 - Evidence references attached to every finding
+- Descriptive same-source temporal summaries for repeated numeric observations; never causal and never an automatic severity override
 - Owner brief generator
 - Action queue
 - FastAPI endpoints for health, analysis, and demo data
