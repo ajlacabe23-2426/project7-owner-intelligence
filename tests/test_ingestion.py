@@ -59,14 +59,15 @@ def test_batch_rejects_duplicate_signal_ids():
 
 
 def test_batch_digest_is_independent_of_delivery_order():
+    items = [signal("a", 4), signal("b", 5)]
     first = SignalBatch(
         batch_id="batch-004",
         source="demo.support",
-        signals=[signal("a", 4), signal("b", 5)],
+        signals=items,
     )
     second = SignalBatch(
         batch_id="batch-004",
         source="demo.support",
-        signals=[signal("b", 5), signal("a", 4)],
+        signals=[items[1], items[0]],
     )
     assert batch_digest(first) == batch_digest(second)
