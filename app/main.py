@@ -9,6 +9,7 @@ from app.demo_data import synthetic_signals
 from app.episodes import EpisodeNotFound, list_episodes, reconcile_brief, resolve_episode
 from app.evidence import ConflictingObservation
 from app.feedback import FeedbackConflict, get_episode_feedback, record_disposition, record_outcome
+from app.ingestion import IngestionResult, SignalBatch, analyze_signal_batch
 from app.models import (
     BusinessSignal,
     EpisodeFeedback,
@@ -51,6 +52,14 @@ def demo_signals() -> list[BusinessSignal]:
 @app.get("/demo/brief", response_model=OwnerBrief)
 def demo_brief() -> OwnerBrief:
     return build_owner_brief(synthetic_signals())
+
+
+@app.post("/ingest/analyze", response_model=IngestionResult)
+def ingest_and_analyze(batch: SignalBatch) -> IngestionResult:
+    try:
+        return analyze_signal_batch(batch)
+    except ConflictingObservation as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
 
 
 @app.post("/analyze", response_model=OwnerBrief)
