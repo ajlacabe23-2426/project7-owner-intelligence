@@ -22,6 +22,7 @@ Owner brief + action queue
 
 - Synthetic/local source adapter for reproducible demos
 - Normalized signal schema
+- Provider-neutral source-batch ingestion contract with source consistency checks and stable batch digests
 - Deterministic rule engine
 - Priority levels: critical / high / medium / low
 - Evidence references attached to every finding
