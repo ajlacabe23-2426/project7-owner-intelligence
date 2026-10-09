@@ -115,7 +115,7 @@ def test_out_of_order_input_produces_same_quality_result():
     assert forward_issues == reversed_issues
 
 
-def test_future_dated_observation_is_degraded_not_treated_as_current():
+def test_future_dated_observation_is_blocked_from_current_actions():
     future = support_signal(
         signal_id="future",
         source="support.a",
@@ -124,9 +124,14 @@ def test_future_dated_observation_is_degraded_not_treated_as_current():
     quality, issues = assess_evidence([future], as_of=BASE)
 
     result = quality[("support.a", "future")]
-    assert result.level == "degraded"
+    assert result.level == "blocked"
     assert "observation.future-dated" in result.reason_codes
     assert any(issue.code == "observation.future-dated" for issue in issues)
+
+    brief = build_owner_brief([future], as_of=BASE)
+    assert len(brief.findings) == 1
+    assert brief.findings[0].confidence == "blocked"
+    assert brief.action_queue == []
 
 
 def test_older_same_source_observation_is_superseded_and_cannot_drive_action():
@@ -182,3 +187,44 @@ def test_superseded_value_does_not_create_false_cross_source_conflict():
     assert not any(
         issue.code == "observation.cross-source-conflict" for issue in issues
     )
+
+
+def test_invalid_future_observation_does_not_supersede_current_support_alert():
+    current = support_signal(
+        signal_id="current", source="support.primary", value=4, observed_at=BASE
+    )
+    bad_future = support_signal(
+        signal_id="future", source="support.primary", value=0,
+        observed_at=BASE + timedelta(hours=1),
+    )
+    brief = build_owner_brief([bad_future, current], as_of=BASE)
+    assert not any(
+        issue.code == "observation.superseded" and "current" in issue.signal_ids
+        for issue in brief.evidence_issues
+    )
+    assert len(brief.findings) == 1
+    assert brief.findings[0].confidence == "normal"
+    assert brief.findings[0].evidence[0].signal_id == "current"
+    assert len(brief.action_queue) == 1
+    assert any(issue.code == "observation.future-dated" for issue in brief.evidence_issues)
+
+
+def test_invalid_future_observation_does_not_conflict_with_current_evidence():
+    current = support_signal(
+        signal_id="current", source="support.a", value=4, observed_at=BASE
+    )
+    bad_future = support_signal(
+        signal_id="future", source="support.b", value=7,
+        observed_at=BASE + timedelta(minutes=30),
+    )
+    brief = build_owner_brief([current, bad_future], as_of=BASE)
+    assert not any(
+        issue.code == "observation.cross-source-conflict"
+        for issue in brief.evidence_issues
+    )
+    by_id = {
+        finding.evidence[0].signal_id: finding for finding in brief.findings
+    }
+    assert by_id["current"].confidence == "normal"
+    assert by_id["future"].confidence == "blocked"
+    assert len(brief.action_queue) == 1

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from datetime import timezone
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -42,18 +43,19 @@ class IngestionResult(BaseModel):
 
 def batch_digest(batch: SignalBatch) -> str:
     """Stable digest independent of adapter delivery order."""
-    ordered = sorted(
-        batch.signals,
-        key=lambda signal: (
-            signal.observed_at.isoformat(),
-            signal.id,
-        ),
-    )
+    # Two adapters may express the same instant with different timezone offsets.
+    # Normalize before sorting and hashing so equivalent evidence has one digest.
+    canonical_signals = []
+    for signal in batch.signals:
+        item = signal.model_dump(mode="json")
+        item["observed_at"] = signal.observed_at.astimezone(timezone.utc).isoformat()
+        canonical_signals.append(item)
+    canonical_signals.sort(key=lambda item: (item["observed_at"], item["id"]))
     payload = {
         "batch_id": batch.batch_id,
         "source": batch.source,
         "connector_run_id": batch.connector_run_id,
-        "signals": [signal.model_dump(mode="json") for signal in ordered],
+        "signals": canonical_signals,
     }
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()

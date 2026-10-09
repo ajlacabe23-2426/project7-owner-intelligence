@@ -71,3 +71,27 @@ def test_batch_digest_is_independent_of_delivery_order():
         signals=[items[1], items[0]],
     )
     assert batch_digest(first) == batch_digest(second)
+
+
+def test_batch_digest_normalizes_same_instants_across_timezone_offsets():
+    # Identical source observations can arrive with different local offsets.
+    # The digest must identify the evidence, not the adapter's timestamp format.
+    first = signal("a", 4)
+    second = signal("b", 5)
+    utc = SignalBatch(
+        batch_id="batch-timezone",
+        source="demo.support",
+        signals=[
+            {**first, "observed_at": "2026-10-01T15:45:00+00:00"},
+            {**second, "observed_at": "2026-10-01T16:00:00+00:00"},
+        ],
+    )
+    offset = SignalBatch(
+        batch_id="batch-timezone",
+        source="demo.support",
+        signals=[
+            {**second, "observed_at": "2026-10-01T12:00:00-04:00"},
+            {**first, "observed_at": "2026-10-01T10:45:00-05:00"},
+        ],
+    )
+    assert batch_digest(utc) == batch_digest(offset)

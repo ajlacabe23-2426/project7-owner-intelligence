@@ -34,7 +34,15 @@ def build_owner_brief(
     if evidence_issues:
         headline += f" Evidence review flagged {len(evidence_issues)} quality issue(s)."
 
-    temporal_assessments = assess_temporal_patterns(signals)
+    # A future-dated observation is not current evidence: it must not create
+    # or reverse a historical trend while awaiting source-clock review.
+    # Keep near-future timestamps inside the documented clock-skew tolerance.
+    eligible_temporal_signals = [
+        signal for signal in signals
+        if "observation.future-dated"
+        not in quality_by_observation[(signal.source, signal.id)].reason_codes
+    ]
+    temporal_assessments = assess_temporal_patterns(eligible_temporal_signals)
 
     action_queue = [
         finding.recommended_action
