@@ -87,3 +87,20 @@ def test_future_dated_observations_do_not_create_or_reverse_trends():
     assert assessment.latest_value == 70
     assert assessment.observation_count == 3
     assert assessment.latest_observed_at == BASE + timedelta(hours=2)
+
+
+def test_small_future_clock_skew_remains_eligible_for_trend():
+    as_of = BASE + timedelta(hours=1)
+    slightly_ahead = revenue("clock-skew", 80, 1).model_copy(
+        update={"observed_at": as_of + timedelta(minutes=4)}
+    )
+    brief = build_owner_brief(
+        [revenue("a", 100, 0), revenue("b", 90, 1), slightly_ahead],
+        as_of=as_of,
+    )
+    assert len(brief.temporal_assessments) == 1
+    assert brief.temporal_assessments[0].observation_count == 3
+    assert brief.temporal_assessments[0].latest_value == 80
+    assert not any(
+        issue.code == "observation.future-dated" for issue in brief.evidence_issues
+    )
