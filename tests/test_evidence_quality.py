@@ -115,7 +115,7 @@ def test_out_of_order_input_produces_same_quality_result():
     assert forward_issues == reversed_issues
 
 
-def test_future_dated_observation_is_degraded_not_treated_as_current():
+def test_future_dated_observation_is_blocked_from_current_actions():
     future = support_signal(
         signal_id="future",
         source="support.a",
@@ -124,9 +124,14 @@ def test_future_dated_observation_is_degraded_not_treated_as_current():
     quality, issues = assess_evidence([future], as_of=BASE)
 
     result = quality[("support.a", "future")]
-    assert result.level == "degraded"
+    assert result.level == "blocked"
     assert "observation.future-dated" in result.reason_codes
     assert any(issue.code == "observation.future-dated" for issue in issues)
+
+    brief = build_owner_brief([future], as_of=BASE)
+    assert len(brief.findings) == 1
+    assert brief.findings[0].confidence == "blocked"
+    assert brief.action_queue == []
 
 
 def test_older_same_source_observation_is_superseded_and_cannot_drive_action():
