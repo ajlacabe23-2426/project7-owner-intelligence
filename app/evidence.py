@@ -141,12 +141,21 @@ def assess_evidence(
         for signal in group:
             by_source[signal.source].append(signal)
         for source, source_group in by_source.items():
+            # An invalid future timestamp must not supersede a real current
+            # observation; exclude it from the latest-current comparison.
+            valid_current = [
+                signal for signal in source_group
+                if "observation.future-dated"
+                not in quality_by_observation[(signal.source, signal.id)].reason_codes
+            ]
+            if not valid_current:
+                continue
             latest_at = max(
-                signal.observed_at.astimezone(timezone.utc) for signal in source_group
+                signal.observed_at.astimezone(timezone.utc) for signal in valid_current
             )
             superseded = [
                 signal
-                for signal in source_group
+                for signal in valid_current
                 if signal.observed_at.astimezone(timezone.utc) < latest_at
             ]
             for signal in superseded:
@@ -178,8 +187,10 @@ def assess_evidence(
             [
                 signal
                 for signal in group
-                if "observation.superseded"
-                not in quality_by_observation[(signal.source, signal.id)].reason_codes
+                if not any(
+                    reason in quality_by_observation[(signal.source, signal.id)].reason_codes
+                    for reason in ("observation.superseded", "observation.future-dated")
+                )
             ],
             key=lambda signal: (
                 signal.observed_at.astimezone(timezone.utc),
