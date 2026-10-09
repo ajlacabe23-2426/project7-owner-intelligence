@@ -96,7 +96,9 @@ def assess_evidence(
         delta = assessed_at - observed_at
         quality = EvidenceQuality(level="fresh", reason_codes=[])
         if observed_at - assessed_at > FUTURE_TOLERANCE:
-            _append_reason(quality, "observation.future-dated", "degraded")
+            # Materially future-dated evidence is not yet observable and must
+            # never generate a present-tense owner action.
+            _append_reason(quality, "observation.future-dated", "blocked")
             issues.append(
                 EvidenceIssue(
                     code="observation.future-dated",
