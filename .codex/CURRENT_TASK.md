@@ -1,6 +1,6 @@
 Task ID: P7-EPISODE-OPERATOR-LAB-2026-10-12
 Title: Make valid local episode feedback reproducible without guessing IDs
-Status: VERIFYING
+Status: READY_FOR_AJ
 Risk Tier: TIER_2
 Base SHA: c8acbbcf685bd79aa7b0f8b5bb90716de3e2c5cc
 
