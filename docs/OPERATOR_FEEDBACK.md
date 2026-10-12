@@ -19,6 +19,40 @@ action caused an observed change.
   severity, edit action queues, or claim customer value. Existing `/analyze`
   remains stateless and unchanged.
 
+## One-command synthetic verification
+
+An episode ID is the identifier returned by `POST /analyze/episodes` or
+`GET /episodes`. It is not an episode name or a finding title.
+`/demo/brief` and `/analyze` are stateless; they do not create an episode
+that can receive feedback. An unknown ID returning 404 tests rejection only,
+not the valid episode workflow.
+
+In your activated environment, start a loopback server in one terminal:
+
+```powershell
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+In a second terminal in this repository, using the same Python environment:
+
+```powershell
+python scripts/demo_operator_feedback.py
+```
+
+The lab creates one uniquely named synthetic support episode, obtains its
+actual ID, records an acted decision and post-action observation, checks exact
+replays and conflicting/unknown IDs, and explicitly resolves that synthetic
+episode. It prints PASS only after feedback reload preserves the complete
+trail. The printed feedback URL can be opened in your browser.
+
+This appends synthetic local records; it does not reset/delete existing data.
+Use a disposable local demo instance. The helper refuses remote URLs,
+credentials, redirects and environment proxies. A failure exits with code 1;
+it does not claim partial completion as PASS.
+
+For a different local port, use
+`python scripts/demo_operator_feedback.py --base-url http://127.0.0.1:8001`.
+
 ## Hands-on experiment
 
 1. Launch locally with `uvicorn app.main:app --host 127.0.0.1 --port 8000`.
