@@ -8,6 +8,8 @@ Base SHA: c8acbbcf685bd79aa7b0f8b5bb90716de3e2c5cc
 Resolve the episode-ID usability/verification gap by providing a loopback-only synthetic walkthrough using IDs actually returned by the existing API.
 
 ## Authorized implementation paths
+- `.github/workflows/ci.yml`
+- `.github/workflows/security-monitor.yml`
 - `scripts/demo_operator_feedback.py`
 - `docs/OPERATOR_FEEDBACK.md`
 - `.codex/CURRENT_TASK.md`
@@ -33,3 +35,6 @@ Resolve the episode-ID usability/verification gap by providing a loopback-only s
 - CI including Python compilation, pip consistency, dependency audit and pytest.
 - Security monitor: repository baseline and reachable-history credential scan.
 - Read-only scope/security review and exact candidate SHA report.
+
+## Exact-head evidence correction — 2026-10-12
+CI and Security Monitor explicitly check out the PR head for pull requests and github.sha otherwise. Earlier passing runs are retained as historical evidence; final-head runs must pass independently. Application and test source are unchanged by this correction. Owner-reported acceptance and remaining targeted device checks retain their existing scope and limitations; no repeated general smoke is required solely for this workflow-only change. No main merge or deployment.
