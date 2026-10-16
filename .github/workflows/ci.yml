@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, 'feat/episode-operator-lab-2026-10-12']
 
 permissions:
   contents: read
