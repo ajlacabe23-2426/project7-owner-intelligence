@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'feat/**']
   pull_request:
-    branches: [main, 'feat/episode-operator-lab-2026-10-12']
+    branches: [main, 'feat/**', 'integration/**']
 
 permissions:
   contents: read
