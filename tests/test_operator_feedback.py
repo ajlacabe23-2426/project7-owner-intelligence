@@ -97,6 +97,33 @@ def test_outcome_rejects_wrong_entity_old_or_reused_observation(monkeypatch, tmp
     assert client.get(f"/episodes/{episode_id}/feedback").json()["outcomes"] == []
 
 
+def test_outcome_rejects_future_evidence_and_duplicate_source_observations(monkeypatch, tmp_path):
+    episode_id = create_episode(monkeypatch, tmp_path)
+    assert client.post(f"/episodes/{episode_id}/dispositions", json={
+        "event_id": "act-1", "status": "acted", "reason_code": "assigned-owner"
+    }).status_code == 201
+    url = f"/episodes/{episode_id}/outcomes"
+    base_signal = support_signal(
+        "after-action", datetime.now(timezone.utc) + timedelta(seconds=2), value=1
+    )
+    payload = {"event_id": "outcome-1", "disposition_event_id": "act-1", "signal": base_signal}
+
+    far_future = {
+        **base_signal,
+        "observed_at": (datetime.now(timezone.utc) + timedelta(days=1)).isoformat(),
+    }
+    assert client.post(url, json={**payload, "signal": far_future}).status_code == 409
+    assert client.get(f"/episodes/{episode_id}/feedback").json()["outcomes"] == []
+
+    first = client.post(url, json=payload)
+    assert first.status_code == 201
+    assert client.post(url, json=payload).json() == first.json()  # Exact replay survives.
+    duplicate = {**payload, "event_id": "outcome-2"}
+    assert client.post(url, json=duplicate).status_code == 409
+    feedback = client.get(f"/episodes/{episode_id}/feedback").json()
+    assert [item["event_id"] for item in feedback["outcomes"]] == ["outcome-1"]
+
+
 def test_unknown_episode_and_invalid_payload_do_not_create_feedback(monkeypatch, tmp_path):
     monkeypatch.setenv("OWNER_INTELLIGENCE_DB_PATH", str(tmp_path / "no-episode.db"))
     assert client.get("/episodes/nonexistent/feedback").status_code == 404
