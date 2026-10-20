@@ -15,6 +15,10 @@ action caused an observed change.
   decisions and post-action observations in stable recorded order.
 - Client-provided event IDs are idempotent: exact retries return the original
   recorded event; changed or cross-type IDs produce HTTP 409.
+- A single `(source, signal ID)` cannot create multiple outcomes by changing
+  `event_id`. Materially future-dated outcomes are rejected using the same
+  five-minute source-clock tolerance as evidence quality checks; exact accepted
+  event replays remain idempotent.
 - Invalid or unsupported feedback cannot silently resolve episodes, change rule
   severity, edit action queues, or claim customer value. Existing `/analyze`
   remains stateless and unchanged.
