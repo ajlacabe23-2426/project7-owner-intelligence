@@ -11,6 +11,7 @@ import sqlite3
 from datetime import datetime, timezone
 
 from app.episodes import EpisodeNotFound, _connect, _row_to_episode, initialize_episode_database
+from app.evidence import FUTURE_TOLERANCE
 from app.models import (
     EpisodeFeedback,
     OperatorDisposition,
@@ -134,6 +135,10 @@ def record_outcome(
             disposition_row["recorded_at"]
         ):
             raise FeedbackConflict("Outcome evidence must be observed after the recorded action.")
+        if request.signal.observed_at.astimezone(timezone.utc) > (
+            datetime.now(timezone.utc) + FUTURE_TOLERANCE
+        ):
+            raise FeedbackConflict("Outcome evidence is materially future-dated.")
         if not episode.latest_finding.evidence:
             raise FeedbackConflict("Episode has no provenance to match the outcome.")
         original = episode.latest_finding.evidence[0]
@@ -146,6 +151,21 @@ def record_outcome(
             for e in episode.latest_finding.evidence
         ):
             raise FeedbackConflict("Outcome must be a new source observation.")
+        # Event IDs identify writes; source + signal ID identifies an observation.
+        # A caller must not count one external observation twice by changing event_id.
+        prior_outcomes = connection.execute(
+            "SELECT payload_json FROM operator_feedback "
+            "WHERE episode_id = ? AND event_type = 'outcome'",
+            (episode_id,),
+        ).fetchall()
+        for row in prior_outcomes:
+            stored_signal = json.loads(row["payload_json"])["signal"]
+            if (stored_signal["source"], stored_signal["id"]) == (
+                request.signal.source, request.signal.id
+            ):
+                raise FeedbackConflict(
+                    "Outcome source observation already exists for this episode."
+                )
         recorded_at = datetime.now(timezone.utc).isoformat()
         connection.execute(
             "INSERT INTO operator_feedback VALUES (?, ?, 'outcome', ?, ?)",
