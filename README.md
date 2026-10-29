@@ -73,7 +73,7 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-Open `http://127.0.0.1:8000/docs` for the interactive API documentation.
+Open `http://127.0.0.1:8000/` for the **synthetic, evidence-linked dashboard**. Select a finding to inspect its source identity, observed value and deterministic rule; the page clears stale results if validation fails. The independent API explorer remains at `http://127.0.0.1:8000/docs`. See `docs/INVESTOR_LOCAL_DASHBOARD_2026-10-30.md` for the exact investor rehearsal and remaining browser checks. **Local/demo only — no real customer data.**
 
 ## Test
 

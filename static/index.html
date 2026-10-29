@@ -94,7 +94,19 @@ const byId=id=>document.getElementById(id);
 const state={brief:null,signals:[],selected:null};
 function element(tag,css,text){const node=document.createElement(tag);if(css)node.className=css;if(text!==undefined)node.textContent=String(text);return node}
 function replace(id,node){const target=byId(id);target.replaceChildren(node)}
-function showError(message){const status=byId("status");status.textContent=message;status.className="notice error"}
+function showError(message){
+  state.brief=null;state.signals=[];state.selected=null;
+  byId("signal-count").textContent="—";
+  byId("finding-count").textContent="—";
+  byId("action-count").textContent="—";
+  byId("headline").textContent="No validated brief is currently available.";
+  byId("detail-title").textContent="Evidence unavailable";
+  replace("findings",element("div","empty","Source validation failed. Refresh only after the local service is healthy."));
+  replace("detail",element("div","empty","Previous evidence was cleared to prevent stale decisions."));
+  replace("signals",element("div","empty","Synthetic source data is unavailable."));
+  replace("action-list",element("ol","queue"));
+  const status=byId("status");status.textContent=message;status.className="notice error";
+}
 function readable(value){return value===undefined||value===null?"—":String(value)}
 function clock(iso){const time=new Date(iso);return Number.isNaN(time.valueOf())?"Unknown time":time.toLocaleString()}
 function renderDetails(finding){
