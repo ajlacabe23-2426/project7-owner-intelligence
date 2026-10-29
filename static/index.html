@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Owner Intelligence | Local Evidence Brief</title>
+<style>
+:root{color-scheme:dark;--bg:#09121b;--card:#111f2a;--border:#2b4150;--ink:#ecf3f3;--muted:#a2b6c1;--teal:#79dbc2;--warning:#f3c17c;--red:#f5a1a3}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at 85% 0%,#163649 0,#09121b 43%);color:var(--ink);font:15px/1.55 system-ui,-apple-system,Segoe UI,sans-serif}
+header,.wrap{max-width:1260px;margin:auto;padding:0 24px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:28px;padding-bottom:22px;border-bottom:1px solid var(--border)}
+.brand{font-weight:900;letter-spacing:.065em}.brand span{color:var(--teal);margin-right:12px}
+.local{font-size:11px;font-weight:800;letter-spacing:.09em;color:#142b25;background:#a8e8d4;padding:8px 11px;border-radius:4px}
+.wrap{padding-top:43px;padding-bottom:65px}
+.eyebrow{letter-spacing:.19em;color:var(--teal);text-transform:uppercase;font-size:11px;font-weight:900}
+h1{font-size:clamp(32px,5vw,62px);line-height:1.08;letter-spacing:-.05em;margin:12px 0 15px;max-width:850px}
+.intro{max-width:800px;color:var(--muted);margin:0 0 27px}
+.toolbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+button{cursor:pointer;font:inherit}
+.primary{border:0;background:var(--teal);color:#0c2425;font-weight:800;border-radius:8px;padding:12px 18px}
+.primary:disabled{opacity:.6;cursor:wait}
+.secondary{border:1px solid var(--border);background:#162936;color:var(--ink);padding:9px 13px;border-radius:7px}
+.notice{color:var(--muted);font-size:12px;margin:0}
+.notice.error{color:var(--red)}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-bottom:17px}
+.stat,.panel{background:var(--card);border:1px solid var(--border);border-radius:13px}
+.stat{padding:18px}.stat small{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.07em}.stat strong{display:block;font-size:33px;line-height:1.25;margin:7px 0 2px}.stat p{color:var(--muted);font-size:12px;margin:0}
+.columns{display:grid;grid-template-columns:minmax(270px,.85fr) minmax(0,1.15fr);gap:17px}
+.panel{padding:19px;min-width:0}.panel h2{font-size:20px;margin:3px 0 8px}.panel p{color:var(--muted)}
+.section-label{font-size:10px;font-weight:900;letter-spacing:.14em;color:var(--teal);text-transform:uppercase}
+.finding-list{display:grid;gap:9px;margin-top:19px}
+.finding{width:100%;display:block;text-align:left;background:#132733;border:1px solid #30515c;padding:14px;border-radius:9px;color:var(--ink)}
+.finding[aria-pressed="true"]{border-color:var(--teal);outline:2px solid #79dbc240}
+.finding b{display:block;margin-top:6px}
+.pill{display:inline-block;padding:3px 7px;border-radius:4px;background:#335260;color:#e4f8fb;font-size:10px;text-transform:uppercase;font-weight:850;letter-spacing:.05em}
+.pill.critical,.pill.high{background:#593e37;color:#ffe0cb}
+.pill.medium{background:#544b2e;color:#fff0b7}
+.explain{white-space:pre-wrap;color:var(--ink)!important}
+.detail-block{border-top:1px solid var(--border);padding:16px 0}
+.detail-block h3{font-size:14px;margin:0 0 8px}
+.evidence-row{background:#162b36;border:1px solid #315360;border-radius:9px;padding:12px;margin-top:8px;overflow-wrap:anywhere}
+.evidence-row strong{display:block;font-size:12px}.evidence-row small{display:block;color:var(--muted);margin-top:4px}
+.queue{margin:5px 0 0;padding-left:21px}.queue li{margin:8px 0}
+.empty{color:var(--muted);padding:24px;background:#142733;border:1px dashed var(--border);border-radius:8px}
+.subgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:17px}
+.signal-list{display:grid;gap:9px;max-height:310px;overflow:auto}
+.signal{padding:11px 0;border-bottom:1px solid var(--border)}
+.signal strong{display:block;font-size:12px;overflow-wrap:anywhere}
+.signal small{color:var(--muted);font-size:11px;overflow-wrap:anywhere}
+footer{border-top:1px solid var(--border);padding-top:24px;margin-top:26px;color:var(--muted);font-size:12px}
+a{color:var(--teal)}
+@media(max-width:850px){.columns,.subgrid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:520px){header,.wrap{padding-left:16px;padding-right:16px}.stats{grid-template-columns:1fr}.local{font-size:9px}.stat strong{font-size:27px}}
+</style>
+</head>
+<body>
+<header><div class="brand"><span>07.</span>OWNER INTELLIGENCE</div><div class="local">SYNTHETIC / LOCAL DEMO</div></header>
+<main class="wrap">
+<div class="eyebrow">Evidence-linked operating decisions</div>
+<h1>Turn scattered signals into a clear next action.</h1>
+<p class="intro">Inspect a fictional business brief, select an exception, and trace the exact source signal behind a suggested priority. Recommendations are deterministic and remain subject to human judgment.</p>
+<div class="toolbar">
+<button id="reload" type="button" class="primary">Refresh synthetic brief</button>
+<span id="status" role="status" aria-live="polite" class="notice">Loading local demo…</span>
+</div>
+<section class="stats" aria-label="Brief summary">
+<div class="stat"><small>Observed source signals</small><strong id="signal-count">—</strong><p>Fictional inputs only</p></div>
+<div class="stat"><small>Flagged exceptions</small><strong id="finding-count">—</strong><p>Inspectable rules and evidence</p></div>
+<div class="stat"><small>Proposed priority actions</small><strong id="action-count">—</strong><p>No automated external action</p></div>
+</section>
+<div class="columns">
+<section class="panel">
+<div class="section-label">01 / Review</div>
+<h2>Priority findings</h2>
+<p id="headline">Preparing synthetic operating brief…</p>
+<div id="findings" class="finding-list" aria-label="Select an exception"><div class="empty">Loading findings…</div></div>
+</section>
+<section class="panel">
+<div class="section-label">02 / Evidence</div>
+<h2 id="detail-title">Select a finding</h2>
+<div id="detail"><div class="empty">Select any exception on the left to inspect its rule, source facts and proposed next action.</div></div>
+</section>
+</div>
+<div class="subgrid">
+<section class="panel"><div class="section-label">03 / Queue</div><h2>Proposed operator actions</h2><ol id="action-list" class="queue"><li>No results loaded yet.</li></ol></section>
+<section class="panel"><div class="section-label">04 / Provenance</div><h2>Input signals</h2><div id="signals" class="signal-list"><div class="empty">Loading synthetic signals…</div></div></section>
+</div>
+<footer><strong>Local evaluation only.</strong> This interface reads synthetic test sources and produces explainable, proposed priorities. It does not access real accounting, CRM, calendar or support accounts; it cannot prove ROI, make business decisions, or provide customer-ready authentication. For API and operator feedback demonstrations, open <a href="/docs">interactive API documentation</a>.</footer>
+</main>
+<script>
+"use strict";
+const byId=id=>document.getElementById(id);
+const state={brief:null,signals:[],selected:null};
+function element(tag,css,text){const node=document.createElement(tag);if(css)node.className=css;if(text!==undefined)node.textContent=String(text);return node}
+function replace(id,node){const target=byId(id);target.replaceChildren(node)}
+function showError(message){const status=byId("status");status.textContent=message;status.className="notice error"}
+function readable(value){return value===undefined||value===null?"—":String(value)}
+function clock(iso){const time=new Date(iso);return Number.isNaN(time.valueOf())?"Unknown time":time.toLocaleString()}
+function renderDetails(finding){
+  const wrapper=element("div");
+  if(!finding){wrapper.append(element("div","empty","No finding selected."));replace("detail",wrapper);return}
+  byId("detail-title").textContent=finding.title;
+  const banner=element("div","detail-block");
+  banner.append(element("span","pill "+finding.severity,finding.severity.toUpperCase()),element("p","explain",finding.explanation));
+  const rule=element("small","notice","Rule "+readable(finding.rule_version)+" · Confidence "+readable(finding.confidence)+" · No automatic action");
+  banner.append(rule);wrapper.append(banner);
+  const action=element("div","detail-block");action.append(element("h3",null,"Proposed human action"),element("p","explain",finding.recommended_action));wrapper.append(action);
+  const evidence=element("div","detail-block");evidence.append(element("h3",null,"Traceable source evidence"));
+  for(const ref of finding.evidence||[]){
+    const card=element("div","evidence-row");
+    card.append(element("strong",null,ref.source+" / "+ref.signal_id));
+    card.append(element("div",null,readable(ref.metric)+": "+readable(ref.observed_value)+" "+readable(ref.unit)));
+    card.append(element("small",null,"Observed "+clock(ref.observed_at)+" · Quality "+readable(ref.quality?.level)+" · Entity "+readable(ref.entity_ref)));
+    evidence.append(card);
+  }
+  if(!finding.evidence?.length)evidence.append(element("div","empty","No attached evidence; do not act on this finding."));
+  wrapper.append(evidence);replace("detail",wrapper);
+}
+function renderFindings(){
+  const list=element("div");
+  const findings=state.brief?.findings||[];
+  if(!findings.length)list.append(element("div","empty","No rule-based exceptions detected."));
+  for(const f of findings){
+    const button=element("button","finding");
+    button.type="button";
+    button.setAttribute("aria-pressed",String(state.selected===f.id));
+    button.append(element("span","pill "+f.severity,f.severity+" · "+readable(f.confidence)));
+    button.append(element("b",null,f.title));
+    button.addEventListener("click",()=>{state.selected=f.id;renderFindings();renderDetails(f)});
+    list.append(button);
+  }
+  replace("findings",list);
+  renderDetails(findings.find(f=>f.id===state.selected)||null);
+}
+function render(){
+  const brief=state.brief;
+  byId("signal-count").textContent=brief.signal_count;
+  byId("finding-count").textContent=brief.findings.length;
+  byId("action-count").textContent=brief.action_queue.length;
+  byId("headline").textContent=brief.headline;
+  const actions=element("ol","queue");
+  for(const action of brief.action_queue)actions.append(element("li",null,action));
+  if(!brief.action_queue.length)actions.append(element("li",null,"No eligible high-priority actions."));
+  replace("action-list",actions);
+  const signalPanel=element("div");
+  for(const signal of state.signals){
+    const row=element("div","signal");
+    row.append(element("strong",null,signal.source+" / "+signal.id));
+    row.append(element("div",null,signal.metric+" = "+readable(signal.value)+" "+readable(signal.unit)));
+    row.append(element("small",null,"Observed "+clock(signal.observed_at)+" · "+readable(signal.entity_ref)));
+    signalPanel.append(row);
+  }
+  replace("signals",signalPanel);
+  if(!brief.findings.some(f=>f.id===state.selected))state.selected=brief.findings[0]?.id||null;
+  renderFindings();
+  byId("status").textContent="Verified display: "+state.signals.length+" synthetic source signals · loaded "+clock(brief.generated_at);
+  byId("status").className="notice";
+}
+async function load(){
+  const button=byId("reload");button.disabled=true;
+  byId("status").textContent="Loading synthetic source records…";
+  try{
+    const [signalResponse,briefResponse]=await Promise.all([fetch("/demo/signals",{cache:"no-store"}),fetch("/demo/brief",{cache:"no-store"})]);
+    if(!signalResponse.ok||!briefResponse.ok)throw Error("The local demo API is unavailable.");
+    const signals=await signalResponse.json(),brief=await briefResponse.json();
+    if(!Array.isArray(signals)||!brief||!Array.isArray(brief.findings)||!Array.isArray(brief.action_queue))throw Error("Unexpected demo response.");
+    if(!signals.every(s=>typeof s.source==="string"&&s.source.startsWith("synthetic.")))throw Error("Refusing to display non-synthetic sources in the local demo.");
+    if(brief.signal_count!==signals.length)throw Error("Source count mismatch; evidence not ready.");
+    const ids=new Set(signals.map(s=>s.id));
+    for(const finding of brief.findings)for(const ref of finding.evidence||[]){
+      if(!ids.has(ref.signal_id)||!ref.source.startsWith("synthetic."))throw Error("Unverifiable evidence source; display stopped.");
+    }
+    state.brief=brief;state.signals=signals;render();
+  }catch(error){showError(error instanceof Error?error.message:"Unable to load the local brief.");}
+  finally{button.disabled=false;}
+}
+byId("reload").addEventListener("click",load);
+load();
+</script>
+</body>
+</html>
