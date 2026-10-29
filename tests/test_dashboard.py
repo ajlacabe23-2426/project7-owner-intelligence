@@ -43,3 +43,15 @@ def test_dashboard_analyzes_same_synthetic_source_snapshot():
             assert ref["metric"] == signal["metric"]
             assert ref["observed_value"] == signal["value"]
             assert ref["observed_at"] == signal["observed_at"]
+
+
+def test_dashboard_disallows_stale_evidence_after_load_error():
+    with TestClient(app) as client:
+        response = client.get("/")
+    assert response.status_code == 200
+    source = response.text
+    assert 'function showError(message)' in source
+    assert 'state.brief=null;state.signals=[];state.selected=null;' in source
+    assert 'No validated brief is currently available.' in source
+    assert 'Previous evidence was cleared to prevent stale decisions.' in source
+    assert 'replace("action-list",element("ol","queue"))' in source
