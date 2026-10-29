@@ -161,15 +161,21 @@ async function load(){
   const button=byId("reload");button.disabled=true;
   byId("status").textContent="Loading synthetic source records…";
   try{
-    const [signalResponse,briefResponse]=await Promise.all([fetch("/demo/signals",{cache:"no-store"}),fetch("/demo/brief",{cache:"no-store"})]);
-    if(!signalResponse.ok||!briefResponse.ok)throw Error("The local demo API is unavailable.");
-    const signals=await signalResponse.json(),brief=await briefResponse.json();
+    const signalResponse=await fetch("/demo/signals",{cache:"no-store"});
+    if(!signalResponse.ok)throw Error("The synthetic source API is unavailable.");
+    const signals=await signalResponse.json();
+    if(!Array.isArray(signals)||!signals.every(s=>typeof s.source==="string"&&s.source.startsWith("synthetic.")))throw Error("Only synthetic input is allowed in this display.");
+    const briefResponse=await fetch("/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(signals),cache:"no-store"});
+    if(!briefResponse.ok)throw Error("The local analysis API is unavailable.");
+    const brief=await briefResponse.json();
     if(!Array.isArray(signals)||!brief||!Array.isArray(brief.findings)||!Array.isArray(brief.action_queue))throw Error("Unexpected demo response.");
     if(!signals.every(s=>typeof s.source==="string"&&s.source.startsWith("synthetic.")))throw Error("Refusing to display non-synthetic sources in the local demo.");
     if(brief.signal_count!==signals.length)throw Error("Source count mismatch; evidence not ready.");
-    const ids=new Set(signals.map(s=>s.id));
+    const inputs=new Map(signals.map(s=>[s.id,s]));
+    if(inputs.size!==signals.length)throw Error("Duplicate source identity; display stopped.");
     for(const finding of brief.findings)for(const ref of finding.evidence||[]){
-      if(!ids.has(ref.signal_id)||!ref.source.startsWith("synthetic."))throw Error("Unverifiable evidence source; display stopped.");
+      const source=inputs.get(ref.signal_id);
+      if(!source||source.source!==ref.source||source.metric!==ref.metric||source.value!==ref.observed_value)throw Error("Evidence does not match the source input; display stopped.");
     }
     state.brief=brief;state.signals=signals;render();
   }catch(error){showError(error instanceof Error?error.message:"Unable to load the local brief.");}
