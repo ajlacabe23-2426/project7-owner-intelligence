@@ -1,8 +1,9 @@
 from typing import Annotated
+from pathlib import Path
 
 from fastapi import Body, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from app.brief import build_owner_brief
 from app.demo_data import synthetic_signals
@@ -42,6 +43,12 @@ async def validation_error_handler(_request, error: RequestValidationError) -> J
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/", include_in_schema=False)
+def local_demo_dashboard() -> FileResponse:
+    """Serve the synthetic local-only investor dashboard; no customer data."""
+    return FileResponse(Path(__file__).resolve().parents[1] / "static" / "index.html")
 
 
 @app.get("/demo/signals", response_model=list[BusinessSignal])
